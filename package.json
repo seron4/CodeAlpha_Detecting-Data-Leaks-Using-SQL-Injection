@@ -1,0 +1,26 @@
+{
+  "name": "securesql-guard",
+  "version": "2.0.0",
+  "description": "SQL Injection Detection & Prevention System with AES-256 encryption and capability codes",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "frontend": "npx serve . -p 8080"
+  },
+  "keywords": ["sql-injection", "security", "aes-256", "jwt", "prevention"],
+  "author": "SecureSQL Guard",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

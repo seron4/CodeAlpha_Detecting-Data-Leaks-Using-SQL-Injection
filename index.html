@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecureSQL Guard — SQL Injection Detection & Prevention System</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══════════════════════════ TOP BAR ═══════════════════════════ -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🛡</div>
+      SecureSQL Guard
+      <span class="version-tag">v2.0</span>
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" onclick="switchTab('dashboard')"   role="tab">Dashboard</button>
+      <button class="tab"        onclick="switchTab('testing')"     role="tab">SQL Tester</button>
+      <button class="tab"        onclick="switchTab('vault')"       role="tab">Data Vault</button>
+      <button class="tab"        onclick="switchTab('capabilities')" role="tab">Capabilities</button>
+      <button class="tab"        onclick="switchTab('scanner')"     role="tab">Vuln Scanner</button>
+      <button class="tab"        onclick="switchTab('docs')"        role="tab">Docs</button>
+    </nav>
+
+    <div class="status-bar">
+      <div class="status-dot" id="system-dot"></div>
+      <span id="system-label">SYSTEM ACTIVE</span>
+      <span id="live-time">00:00:00</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════ MAIN GRID ═══════════════════════════ -->
+  <div class="main" id="main-grid">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="section-label">Security Layers</div>
+      <div class="shield-stack" id="shield-stack">
+        <div class="shield shield-active"  id="sl-pattern">✓ Layer 1 — Pattern Scanner</div>
+        <div class="shield shield-active"  id="sl-param">✓ Layer 2 — Parameterization</div>
+        <div class="shield shield-active"  id="sl-aes">✓ AES-256-GCM Encryption</div>
+        <div class="shield shield-active"  id="sl-token">✓ Capability Tokens</div>
+        <div class="shield shield-active"  id="sl-waf">✓ WAF Ruleset Active</div>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">Attack Pattern Hits</div>
+      <div id="pattern-list" class="pattern-list"></div>
+
+      <hr class="divider" />
+
+      <div class="section-label">Quick-Load Payloads</div>
+      <div id="payload-list" class="payload-list"></div>
+    </aside>
+
+    <!-- CENTER PANEL -->
+    <main class="center" id="center-panel">
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="center-view active">
+        <div class="metric-grid" id="metrics"></div>
+
+        <div class="card">
+          <div class="card-title">Real-time Security Event Log</div>
+          <div id="event-log" class="event-log-container"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">AI Security Analyst <span class="badge badge-purple">Claude API</span></div>
+          <div class="api-key-notice">
+            Powered by Claude AI. Describe any attack scenario and get instant expert security analysis.
+          </div>
+          <div class="field">
+            <label>Attack Scenario</label>
+            <textarea id="ai-query" rows="3"
+              placeholder="e.g. A login form received: ' OR 1=1; DROP TABLE users;-- in the username field..."></textarea>
+          </div>
+          <button class="btn btn-purple" onclick="analyzeWithAI()" id="ai-btn">
+            &#9889; Analyze with Claude AI
+          </button>
+          <div id="ai-output" class="ai-response" style="display:none;margin-top:12px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Attack Timeline (Last 20 Events)</div>
+          <div id="attack-chart" class="timeline-container"></div>
+        </div>
+      </section>
+
+      <!-- SQL TESTER -->
+      <section id="view-testing" class="center-view">
+        <div class="card">
+          <div class="card-title">
+            SQL Injection Tester
+            <span class="badge badge-red">Double-Layer Defense</span>
+          </div>
+          <div class="field">
+            <label>Raw User Input (paste any payload)</label>
+            <textarea id="test-input" rows="3"
+              placeholder="Try: ' OR 1=1--   or   1; DROP TABLE users;   or   ' UNION SELECT username,password FROM users--"></textarea>
+          </div>
+          <div class="two-col">
+            <div class="field" style="margin:0">
+              <label>Target Field</label>
+              <select id="test-field">
+                <option>username</option>
+                <option>password</option>
+                <option>email</option>
+                <option>search_query</option>
+                <option>order_by</option>
+                <option>user_id</option>
+                <option>category</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label>Query Type</label>
+              <select id="test-qtype">
+                <option>SELECT</option>
+                <option>INSERT</option>
+                <option>UPDATE</option>
+                <option>DELETE</option>
+              </select>
+            </div>
+          </div>
+          <div class="two-col" style="margin-top:12px;">
+            <button class="btn btn-purple" onclick="runTest()" id="test-btn">&#9654; Run Security Test</button>
+            <button class="btn btn-outline" onclick="clearTest()">&#10005; Clear</button>
+          </div>
+        </div>
+
+        <div class="card" id="test-result" style="display:none;">
+          <div class="card-title">
+            Layer 1 — Pattern Detection
+            <span id="l1-badge" class="badge"></span>
+          </div>
+          <div id="layer1-output" class="query-output"></div>
+
+          <hr class="divider" />
+
+          <div class="card-title">
+            Layer 2 — Parameterized Query Engine
+            <span class="badge badge-blue">Always Active</span>
+          </div>
+          <div id="layer2-output" class="query-output"></div>
+
+          <hr class="divider" />
+
+          <div class="card-title">Sanitized vs Raw Comparison</div>
+          <div class="two-col" style="gap:8px;">
+            <div>
+              <div class="mini-label">Raw Input</div>
+              <div id="raw-display" class="query-output" style="min-height:48px;border-color:rgba(239,68,68,0.4);"></div>
+            </div>
+            <div>
+              <div class="mini-label">After Layer 1 Sanitization</div>
+              <div id="sanitized-display" class="query-output output-safe" style="min-height:48px;"></div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+          <div id="threat-analysis" class="threat-analysis-box"></div>
+        </div>
+      </section>
+
+      <!-- DATA VAULT -->
+      <section id="view-vault" class="center-view">
+        <div class="card">
+          <div class="card-title">
+            Add Encrypted User Record
+            <span class="badge badge-green">AES-256-GCM + PBKDF2</span>
+          </div>
+          <div class="two-col">
+            <div class="field" style="margin:0">
+              <label>Username / Email</label>
+              <input id="vault-user" type="text" placeholder="alice@example.com" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Password (plaintext — will be encrypted)</label>
+              <input id="vault-pass" type="password" placeholder="••••••••" />
+            </div>
+          </div>
+          <div class="two-col" style="margin-top:10px;">
+            <div class="field" style="margin:0">
+              <label>Role</label>
+              <select id="vault-role">
+                <option>viewer</option>
+                <option>editor</option>
+                <option>admin</option>
+                <option>superadmin</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label>Data Sensitivity</label>
+              <select id="vault-sensitivity">
+                <option>public</option>
+                <option>internal</option>
+                <option>confidential</option>
+                <option>secret</option>
+              </select>
+            </div>
+          </div>
+          <div class="two-col" style="margin-top:12px;">
+            <button class="btn btn-green" onclick="encryptAndStore()">&#128274; Encrypt &amp; Store</button>
+            <button class="btn btn-outline" onclick="clearVault()">&#128465; Clear All Records</button>
+          </div>
+        </div>
+
+        <div class="card" id="enc-preview" style="display:none;">
+          <div class="card-title">Encryption Preview</div>
+          <div class="mini-label">AES-256-GCM Ciphertext (PBKDF2 key derivation, 100,000 iterations)</div>
+          <div class="enc-display" id="enc-output"></div>
+          <div class="mini-label" style="margin-top:10px;">Generated Capability Token (JWT-style, HS256)</div>
+          <div class="token-display" id="token-output"></div>
+          <div class="mini-label" style="margin-top:10px;">Key Derivation Info</div>
+          <div class="enc-display" id="kdf-output" style="color:var(--accent2);"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Encrypted User Vault</div>
+          <div style="overflow-x:auto;">
+            <table class="users-table" id="vault-table">
+              <thead>
+                <tr>
+                  <th>Username</th><th>Role</th><th>Sensitivity</th>
+                  <th>AES-256 Hash</th><th>Salt</th><th>Token</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="vault-body">
+                <tr><td colspan="7" class="empty-cell">No records — add one above</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAPABILITIES -->
+      <section id="view-capabilities" class="center-view">
+        <div class="card">
+          <div class="card-title">Issue Capability Code</div>
+          <div class="two-col">
+            <div class="field" style="margin:0">
+              <label>Subject (user/service)</label>
+              <input id="cap-subject" placeholder="user@example.com or service-name" />
+            </div>
+            <div class="field" style="margin:0">
+              <label>Token Expiry</label>
+              <select id="cap-expiry">
+                <option value="1h">1 Hour</option>
+                <option value="8h">8 Hours</option>
+                <option value="24h" selected>24 Hours</option>
+                <option value="7d">7 Days</option>
+                <option value="30d">30 Days</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label>Permissions (select all that apply)</label>
+            <div id="perm-checkboxes" class="perm-grid"></div>
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label>SQL Access Scope</label>
+            <select id="cap-sql-scope">
+              <option value="SELECT_ONLY">SELECT only (read-only)</option>
+              <option value="SELECT_INSERT">SELECT + INSERT</option>
+              <option value="SELECT_INSERT_UPDATE">SELECT + INSERT + UPDATE</option>
+              <option value="FULL_DML">Full DML (SELECT/INSERT/UPDATE/DELETE)</option>
+              <option value="NO_ACCESS">No SQL access</option>
+            </select>
+          </div>
+          <button class="btn btn-purple" onclick="issueCapability()" style="margin-top:12px;">
+            &#128273; Issue Capability Token
+          </button>
+        </div>
+
+        <div class="card" id="cap-output-card" style="display:none;">
+          <div class="card-title">Generated Token</div>
+          <div class="token-display" id="cap-token-out"></div>
+          <div class="mini-label" style="margin-top:10px;">Decoded Payload</div>
+          <div class="enc-display" id="cap-decoded" style="color:var(--text);"></div>
+          <div class="mini-label" style="margin-top:10px;">SQL Injection Guard for this Token</div>
+          <div id="cap-sql-guard" class="threat-analysis-box" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Active Capability Registry</div>
+          <div id="cap-registry" class="capability-grid"></div>
+        </div>
+      </section>
+
+      <!-- VULNERABILITY SCANNER -->
+      <section id="view-scanner" class="center-view">
+        <div class="card">
+          <div class="card-title">Automated Vulnerability Scanner</div>
+          <div class="field">
+            <label>Target Endpoint or Pattern to Audit</label>
+            <input id="scan-target" placeholder="e.g. /api/login  or  SELECT * FROM users WHERE id=?" />
+          </div>
+          <div class="field">
+            <label>Scan Depth</label>
+            <select id="scan-depth">
+              <option value="quick">Quick (5 checks)</option>
+              <option value="standard" selected>Standard (14 checks)</option>
+              <option value="deep">Deep (20 checks)</option>
+            </select>
+          </div>
+          <div class="two-col" style="margin-top:12px;">
+            <button class="btn btn-red" onclick="runVulnScan()" id="scan-btn">&#128269; Run Full Scan</button>
+            <button class="btn btn-outline" onclick="clearScanResults()">Clear Results</button>
+          </div>
+        </div>
+        <div id="scan-summary" class="metric-grid" style="display:none;"></div>
+        <div id="scan-results" class="vuln-scanner"></div>
+      </section>
+
+      <!-- DOCS -->
+      <section id="view-docs" class="center-view">
+        <div class="card">
+          <div class="card-title">System Architecture Documentation</div>
+          <div class="docs-body" id="docs-content"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right-panel" id="right-panel">
+      <div class="section-label">Live Threat Feed</div>
+      <div id="threat-feed" class="threat-feed-container"></div>
+
+      <div class="section-label" style="margin-top:14px;">Security Metrics</div>
+      <div id="right-stats" class="right-stats-container"></div>
+
+      <div class="section-label" style="margin-top:14px;">Recent Blocked Payloads</div>
+      <div id="blocked-log" class="blocked-log-container"></div>
+
+      <div class="section-label" style="margin-top:14px;">Encryption Status</div>
+      <div id="enc-status" class="enc-status-container"></div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ═══════════ SCRIPTS (order matters) ═══════════ -->
+<script src="js/crypto.js"></script>
+<script src="js/patterns.js"></script>
+<script src="js/sanitizer.js"></script>
+<script src="js/capabilities.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
